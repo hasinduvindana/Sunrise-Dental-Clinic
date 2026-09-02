@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Staff Dashboard & POS System | SunRise Dental Clinic</title>
+  
+  <!-- Pure CSS Stylesheets (Zero Frameworks) -->
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="stylesheet" href="css/print.css" />
+  <link rel="icon" href="assets/images/logo-icon.png" type="image/png" />
+</head>
+<body>
+
+  <div class="app-wrapper">
+    <!-- =======================================================================
+         1. Dynamic Sidebar
+         ======================================================================= -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <img src="assets/images/logo-icon.png" alt="Emblem" class="sidebar-logo" />
+        <div>
+          <div class="sidebar-brand-name">SunRise Dental</div>
+          <div class="sidebar-brand-role" id="sidebar-role-indicator">Clinic Management</div>
+        </div>
+      </div>
+
+      <!-- Active User Profile Card in Sidebar -->
+      <div class="user-profile-badge">
+        <div class="user-avatar" id="topbar-user-avatar">SR</div>
+        <div class="user-details">
+          <div class="user-name" id="topbar-user-name">Staff User</div>
+          <span class="badge badge-info" id="topbar-user-role">Role</span>
+        </div>
+      </div>
+
+      <!-- Navigation List (Dynamically Rendered by Role) -->
+      <ul class="sidebar-nav" id="sidebar-nav-list">
+        <!-- Rendered by js/dashboard.js -->
+      </ul>
+
+      <div class="sidebar-footer">
+        <a href="index.html" class="sidebar-nav-item" style="color: #90e0ef;">
+          <span class="sidebar-nav-icon">🌐</span>
+          <span>View Public Portal</span>
+        </a>
+        <a onclick="AuthService.logout()" class="sidebar-nav-item" style="cursor:pointer;color: #fca5a5;">
+          <span class="sidebar-nav-icon">🚪</span>
+          <span>Sign Out</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+    <!-- =======================================================================
+         2. Main Application Content Area
+         ======================================================================= -->
+    <div class="main-content">
+      <!-- Topbar Header -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle-btn" id="sidebar-toggle-btn">☰</button>
+          <div class="page-title" id="dashboard-page-title">Dashboard Overview</div>
+        </div>
+
+        <div class="topbar-right">
+          <!-- The role comes from the account you signed in with; it is
+               enforced on the server, so it can no longer be switched here. -->
+          <div class="demo-role-selector">
+            <label>Signed in as:</label>
+            <span class="badge badge-info" id="active-role-label">-</span>
+          </div>
+
+          <!-- Live Digital Clock -->
+          <div class="clock-widget" id="live-clock">
+            🕒 --:--:--
+          </div>
+
+          <a href="index.html" class="btn btn-secondary btn-sm">
+            🌐 Public Site
+          </a>
+        </div>
+      </header>
+
+      <!-- Dynamic Content Views Container -->
+      <main class="content-body">
+        <!-- Tab 1: Overview -->
+        <div class="dashboard-view" id="view-overview"></div>
+
+        <!-- Tab 2: POS Cashier Checkout Desk -->
+        <div class="dashboard-view" id="view-pos-cashier"></div>
+
+        <!-- Tab 3: Cancel Appointments (by NIC) -->
+        <div class="dashboard-view" id="view-cancel-appointment"></div>
+
+        <!-- Tab 4: Cashier History & Daily Log -->
+        <div class="dashboard-view" id="view-cashier-history"></div>
+
+        <!-- Tab 5: Patient Administrator (Register & Session Assignment) -->
+        <div class="dashboard-view" id="view-patient-admin"></div>
+
+        <!-- Tab 6: Nurse Triage Station -->
+        <div class="dashboard-view" id="view-nurse-triage"></div>
+
+        <!-- Tab 7: Nurse & Treatment Bill Generator -->
+        <div class="dashboard-view" id="view-nurse-billing"></div>
+
+        <!-- Tab 8: Doctor Consultation Desk & Queue -->
+        <div class="dashboard-view" id="view-doctor-portal"></div>
+
+        <!-- Tab 9: Doctor Scheduled Sessions Manager -->
+        <div class="dashboard-view" id="view-doctor-sessions"></div>
+
+        <!-- Tab 10: Doctor Custom Treatment Charges -->
+        <div class="dashboard-view" id="view-doctor-pricing"></div>
+
+        <!-- Tab 11: Doctor Patient Medical History -->
+        <div class="dashboard-view" id="view-doctor-patient-history"></div>
+
+        <!-- Tab 12: Income Reports & Doctor-Wise Breakdown -->
+        <div class="dashboard-view" id="view-income-reports"></div>
+
+        <!-- Tab 13: Invoices Oversight -->
+        <div class="dashboard-view" id="view-invoices-list"></div>
+
+        <!-- Tab 14: Settle Invoices (Cashier View) -->
+        <div class="dashboard-view" id="view-cashier-invoices"></div>
+
+        <!-- Tab 15: Patient Diagnostic Reports Archive -->
+        <div class="dashboard-view" id="view-patient-reports-mgmt"></div>
+
+        <!-- Tab 16: Staff & User Management -->
+        <div class="dashboard-view" id="view-user-management"></div>
+
+        <!-- Tab 17: Clinic Global Settings -->
+        <div class="dashboard-view" id="view-clinic-settings"></div>
+
+        <!-- Tab 18: All Appointments Master Directory -->
+        <div class="dashboard-view" id="view-all-appointments"></div>
+
+        <!-- Tab 19: All Doctor Schedules Master Table -->
+        <div class="dashboard-view" id="view-all-sessions"></div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Hidden Printable Area for Official Receipts & Invoices -->
+  <div id="printable-area"></div>
+
+  <!-- Core JavaScript Modules (Zero Frameworks) -->
+  <script src="js/api.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/print-util.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

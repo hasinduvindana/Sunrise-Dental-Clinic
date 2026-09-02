@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SunRise Dental Clinic | Advanced Dental Care & Implant Center</title>
+  
+  <!-- Pure CSS Stylesheets (Zero Frameworks) -->
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/loading.css" />
+  <link rel="stylesheet" href="css/print.css" />
+  <link rel="icon" href="assets/images/logo-icon.png" type="image/png" />
+</head>
+<body>
+
+  <!-- =========================================================================
+       1. Splash Loading Screen (3-Second Zoom-in Animation)
+       ========================================================================= -->
+  <div id="splash-screen">
+    <div class="splash-content">
+      <div class="splash-logo-container">
+        <div class="splash-glow-ring"></div>
+        <div class="splash-pulse-ring"></div>
+        <img src="assets/images/loading.png" alt="SunRise Dental Clinic Logo" class="splash-logo" />
+      </div>
+      <h1 class="splash-title">SunRise Dental Clinic</h1>
+      <div class="splash-subtitle">Excellence in Advanced Dental Healthcare</div>
+      <div class="splash-progress-track">
+        <div class="splash-progress-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       2. Public Navigation Bar
+       ========================================================================= -->
+  <header class="navbar">
+    <div class="container navbar-container">
+      <a href="index.html" class="navbar-logo">
+        <img src="assets/images/logo.png" alt="SunRise Dental Clinic" />
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#home" class="nav-link active">Home</a></li>
+        <li><a href="#about" class="nav-link">About Us</a></li>
+        <li><a href="#services" class="nav-link">Dental Services</a></li>
+        <li><a href="#schedules" class="nav-link">Doctor Schedules</a></li>
+        <li><a href="#patient-reports" class="nav-link">Patient Reports</a></li>
+        <li><a href="#help" class="nav-link">Help & FAQ</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button class="btn btn-primary" onclick="openPublicBookingModal()">
+          📅 Get Appointment
+        </button>
+        <a href="login.html" class="btn btn-secondary">
+          🔐 Staff Sign In
+        </a>
+        <button class="mobile-toggle" aria-label="Toggle navigation menu">
+          ☰
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       3. Hero Section
+       ========================================================================= -->
+  <section class="hero-section" id="home">
+    <div class="container hero-grid">
+      <div>
+        <div class="hero-tag">
+          ✨ Premier Dental Care in Colombo
+        </div>
+        <h1 class="hero-title">
+          Brilliant Smiles Powered by <span>Modern Dentistry</span>
+        </h1>
+        <p class="hero-description">
+          Welcome to <strong>SunRise Dental Clinic</strong>. We provide state-of-the-art restorative, cosmetic, orthodontic, and surgical dental solutions delivered by certified dental specialists with personalized patient comfort.
+        </p>
+
+        <div class="hero-cta-group">
+          <button class="btn btn-primary btn-lg" onclick="openPublicBookingModal()">
+            📅 Book Your Session Slot
+          </button>
+          <a href="#schedules" class="btn btn-secondary btn-lg">
+            🗓️ View Doctor Schedules
+          </a>
+        </div>
+
+        <div class="hero-stats">
+          <div class="hero-stat-item">
+            <h4>15,000+</h4>
+            <p>Happy Patients</p>
+          </div>
+          <div class="hero-stat-item">
+            <h4>100%</h4>
+            <p>Sterile & Digitalized</p>
+          </div>
+          <div class="hero-stat-item">
+            <h4>4+</h4>
+            <p>Consultant Specialists</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Session Lookup Hero Card -->
+      <div class="hero-card">
+        <div class="hero-card-header">
+          <div class="hero-card-title">
+            <span>🔍</span> Find Doctor Schedule
+          </div>
+          <p style="font-size: 0.9rem; color: #64748b;">Check today's and this month's available consultation slots.</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Consultant Specialization:</label>
+          <select class="form-select" id="hero-quick-spec" onchange="document.getElementById('filter-doctor').scrollIntoView({behavior:'smooth'})">
+            <option value="">-- All Specializations --</option>
+            <option value="Orthodontics">Orthodontics & Braces</option>
+            <option value="Oral Surgeon">Oral & Maxillofacial Surgery</option>
+            <option value="Implantology">Dental Implants & Periodontics</option>
+            <option value="Pediatric">Pediatric & Restorative</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Consultation Date:</label>
+          <input type="date" class="form-control" id="hero-quick-date" value="2026-09-02" />
+        </div>
+
+        <a href="#schedules" class="btn btn-accent w-100 btn-lg">
+          Search Available Slots ➔
+        </a>
+
+        <div style="margin-top: 1.25rem; text-align: center; font-size: 0.85rem; color: #64748b;">
+          📞 Dental Emergency? Call Hotline: <strong style="color: #0b2545;">+94 11 234 5678</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       4. About Us Section
+       ========================================================================= -->
+  <section class="section section-alt" id="about">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-subtitle">Why Choose Us</span>
+        <h2 class="section-title">World-Class Dental Care Centered Around You</h2>
+        <p class="section-desc">We combine clinical expertise with modern diagnostic technology to deliver pain-free, long-lasting dental treatments.</p>
+      </div>
+
+      <div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem;">
+        <div class="card">
+          <div style="font-size: 2.2rem; margin-bottom: 1rem;">👨‍⚕️</div>
+          <h3 style="margin-bottom: 0.75rem; font-size: 1.25rem;">Expert Dental Specialists</h3>
+          <p style="font-size: 0.925rem;">Our multidisciplinary team includes certified orthodontists, oral surgeons, implantologists, and pediatric dentists.</p>
+        </div>
+
+        <div class="card">
+          <div style="font-size: 2.2rem; margin-bottom: 1rem;">🔬</div>
+          <h3 style="margin-bottom: 0.75rem; font-size: 1.25rem;">Digital 3D Diagnostics</h3>
+          <p style="font-size: 0.925rem;">Equipped with low-radiation digital IOPA radiography, CBCT 3D bone scanners, and intraoral digital imaging.</p>
+        </div>
+
+        <div class="card">
+          <div style="font-size: 2.2rem; margin-bottom: 1rem;">🛡️</div>
+          <h3 style="margin-bottom: 0.75rem; font-size: 1.25rem;">Hospital-Grade Sterilization</h3>
+          <p style="font-size: 0.925rem;">Strict Class-B autoclave sterilization protocols and single-use disposable consumables ensure 100% patient safety.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       5. Dental Services Section
+       ========================================================================= -->
+  <section class="section" id="services">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-subtitle">Our Specializations</span>
+        <h2 class="section-title">Comprehensive Dental Treatments</h2>
+        <p class="section-desc">From routine preventive care to complex surgical reconstructions, we provide full-spectrum oral healthcare.</p>
+      </div>
+
+      <div class="services-grid">
+        <div class="service-card">
+          <div class="service-icon">✨</div>
+          <h3 class="service-title">Scaling & Polishing</h3>
+          <p class="service-desc">Ultrasonic removal of stubborn plaque, calculus, and nicotine/tea stains with gentle enamel fluoridation.</p>
+        </div>
+
+        <div class="service-card">
+          <div class="service-icon">🦷</div>
+          <h3 class="service-title">Root Canal Treatment</h3>
+          <p class="service-desc">Single-visit rotary endodontic therapy to eliminate tooth infections, relieve acute toothache, and save natural teeth.</p>
+        </div>
+
+        <div class="service-card">
+          <div class="service-icon">💎</div>
+          <h3 class="service-title">Laser Teeth Whitening</h3>
+          <p class="service-desc">Advanced diode laser in-chair bleaching delivering up to 6 shades lighter, brighter smile in just 45 minutes.</p>
+        </div>
+
+        <div class="service-card">
+          <div class="service-icon">🔩</div>
+          <h3 class="service-title">Dental Implants</h3>
+          <p class="service-desc">Permanent titanium root replacements with custom zirconia crowns for seamless natural aesthetics and full chewing function.</p>
+        </div>
+
+        <div class="service-card">
+          <div class="service-icon">👑</div>
+          <h3 class="service-title">Crowns & Bridges</h3>
+          <p class="service-desc">High-strength ceramic and full-zirconia restorative prosthetics crafted to blend naturally with adjacent teeth.</p>
+        </div>
+
+        <div class="service-card">
+          <div class="service-icon">😁</div>
+          <h3 class="service-title">Orthodontics / Braces</h3>
+          <p class="service-desc">Metal braces, ceramic aesthetic brackets, and clear aligners to correct malocclusion and misaligned teeth.</p>
+        </div>
+
+        <div class="service-card">
+          <div class="service-icon">💉</div>
+          <h3 class="service-title">Surgical Extraction</h3>
+          <p class="service-desc">Gentle, pain-managed minor oral surgery for impacted wisdom teeth, root remnants, and fractured teeth.</p>
+        </div>
+
+        <div class="service-card">
+          <div class="service-icon">👶</div>
+          <h3 class="service-title">Pediatric Dentistry</h3>
+          <p class="service-desc">Child-friendly preventive dental checkups, pit and fissure sealants, fluoride varnishes, and gentle restorations.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       6. Doctor Schedules Section (with Month, Date & Doctor Dropdown Filters)
+       ========================================================================= -->
+  <section class="section section-alt" id="schedules">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-subtitle">Doctor Schedules</span>
+        <h2 class="section-title">Current Month Doctor Consultation Schedules</h2>
+        <p class="section-desc">Filter available session slots by your preferred specialist or consultation date.</p>
+      </div>
+
+      <!-- Interactive Filter Bar -->
+      <div class="schedule-filter-bar">
+        <div class="form-row" style="align-items: flex-end;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">👨‍⚕️ Filter by Doctor Name:</label>
+            <select id="filter-doctor" class="form-select">
+              <option value="ALL">-- All Specialists & Doctors --</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">📅 Filter by Session Date:</label>
+            <input type="date" id="filter-date" class="form-control" />
+          </div>
+
+          <div>
+            <button id="btn-reset-filter" class="btn btn-secondary w-100">
+              ↺ Reset Filters
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Schedule Cards Container -->
+      <div id="schedule-grid-container" class="schedule-grid">
+        <!-- Rendered dynamically by js/app.js -->
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       7. Patient Reports Lookup Section (NIC Prompt with Enter Button)
+       ========================================================================= -->
+  <section class="section" id="patient-reports">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-subtitle">Digital Health Portal</span>
+        <h2 class="section-title">Patient Diagnostic Reports & Imaging Vault</h2>
+        <p class="section-desc">Enter your National Identity Card (NIC) number to search, view, and print your diagnostic reports and X-rays.</p>
+      </div>
+
+      <!-- NIC Search Box -->
+      <div class="report-search-box">
+        <h3 style="color: #0b2545; margin-bottom: 0.5rem; font-size: 1.3rem;">Enter Patient NIC Number</h3>
+        <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem;">Quickly retrieve your verified dental X-rays, lab findings, and clinical reports.</p>
+        
+        <div class="input-group">
+          <input type="text" id="report-search-nic" class="form-control" placeholder="Enter Patient NIC (e.g. 200012345678, 199587654321)..." />
+          <button class="btn btn-primary" id="btn-search-reports">
+            Enter ➔
+          </button>
+        </div>
+        <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 0.75rem;">
+          Demo NICs for testing: <code>200012345678</code>, <code>199587654321</code>, <code>198834567890</code>
+        </div>
+      </div>
+
+      <!-- Search Results Area -->
+      <div id="reports-results-area">
+        <!-- Populated dynamically upon search -->
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       8. Help & FAQ Section
+       ========================================================================= -->
+  <section class="section section-alt" id="help">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-subtitle">Need Assistance?</span>
+        <h2 class="section-title">Frequently Asked Questions & Help</h2>
+        <p class="section-desc">Find answers to common questions about booking sessions, payments, and clinic procedures.</p>
+      </div>
+
+      <div class="faq-accordion">
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>How do I book an appointment through the website?</span>
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer">
+            <p>You can click on the "Get Appointment" button or select a slot directly from our Doctor Schedules section. Enter your NIC, Name, and Phone number to receive your official Appointment Booking Slip with your Token Number.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Can I pay for my appointment online?</span>
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer">
+            <p>Online payment is not collected during booking. All consultation charges and treatment fees are settled at our Cashier Reception desk upon your arrival using Cash or Credit/Debit Card (Visa, MasterCard, AMEX).</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>How do I access and print my diagnostic reports?</span>
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer">
+            <p>Navigate to the "Patient Reports" section, enter your NIC number, and press Enter. You will be able to view and download all verified X-rays, CBCT scans, and treatment summaries formatted as standardized PDF documents.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>What should I do in case of a dental emergency?</span>
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer">
+            <p>For acute dental emergencies such as trauma, severe facial swelling, or uncontrolled toothache, please call our 24/7 Emergency Dental Hotline at <strong>+94 77 123 4567</strong> or visit our clinic directly.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       9. Footer
+       ========================================================================= -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-logo">
+            <img src="assets/images/logo-icon.png" alt="Emblem" />
+            <div class="footer-logo-title">SunRise Dental Clinic</div>
+          </div>
+          <p class="footer-desc">
+            SunRise Dental Clinic is dedicated to providing clinical excellence, gentle dental care, and state-of-the-art aesthetic and surgical dentistry.
+          </p>
+          <div style="margin-top: 1rem; font-size: 0.85rem; color: #90e0ef;">
+            📍 No. 128, Galle Road, Colombo 03, Sri Lanka
+          </div>
+        </div>
+
+        <div>
+          <h4 class="footer-heading">Quick Links</h4>
+          <ul class="footer-links">
+            <li><a href="#home">Home</a></li>
+            <li><a href="#about">About Our Clinic</a></li>
+            <li><a href="#services">Dental Treatments</a></li>
+            <li><a href="#schedules">Doctor Schedules</a></li>
+            <li><a href="#patient-reports">Patient Reports</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-heading">Opening Hours</h4>
+          <ul class="footer-links">
+            <li>Monday - Friday: 08:30 AM - 08:00 PM</li>
+            <li>Saturday: 09:00 AM - 06:00 PM</li>
+            <li>Sunday: 09:00 AM - 02:00 PM</li>
+            <li>Public Holidays: Emergency On-Call</li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-heading">Staff & Portal</h4>
+          <p class="footer-desc" style="margin-bottom: 1rem;">
+            Authorized clinic staff (Super Admin, Admins, Doctors, Nurses, Patient Admins, and Cashiers) can sign in below.
+          </p>
+          <a href="login.html" class="btn btn-accent w-100">
+            🔐 Staff Management Portal
+          </a>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        &copy; 2026 SunRise Dental Clinic. All Rights Reserved. Pure HTML5, CSS3, JavaScript POS System.
+      </div>
+    </div>
+  </footer>
+
+  <!-- =========================================================================
+       10. Public Appointment Booking Modal
+       ========================================================================= -->
+  <div class="modal-backdrop" id="modal-public-booking">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>📅</span> Book Consultation Appointment
+        </div>
+        <button class="modal-close" onclick="closePublicBookingModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <form id="form-public-booking">
+          <div class="form-group">
+            <label class="form-label">Select Available Doctor Session <span class="required">*</span>:</label>
+            <select id="book-session-select" class="form-select" required>
+              <!-- Filled dynamically -->
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Patient NIC Number <span class="required">*</span>:</label>
+              <input type="text" id="book-nic" class="form-control" placeholder="e.g. 200012345678" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Patient Full Name <span class="required">*</span>:</label>
+              <input type="text" id="book-name" class="form-control" placeholder="e.g. Kavindu Sandeepana" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Mobile Contact <span class="required">*</span>:</label>
+              <input type="tel" id="book-phone" class="form-control" placeholder="0771234567" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email Address:</label>
+              <input type="email" id="book-email" class="form-control" placeholder="patient@gmail.com" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Reason for Consultation / Symptoms:</label>
+            <textarea id="book-reason" class="form-control" placeholder="Describe symptoms (e.g. toothache, dental checkup, braces inquiry)..."></textarea>
+          </div>
+
+          <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 0.85rem; font-size: 0.825rem; color: #92400e; margin-bottom: 1.25rem;">
+            ⚠️ <strong>Payment Notice:</strong> Self-booking issues an official reservation token slip. Consultation fee is collected at the Cashier counter upon arrival.
+          </div>
+
+          <div class="modal-footer" style="padding: 1rem 0 0 0; background: transparent;">
+            <button type="button" class="btn btn-secondary" onclick="closePublicBookingModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-lg">
+              Confirm & Generate Token Slip ➔
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Hidden Printable Area for Slip / Receipts / Invoices / Reports -->
+  <div id="printable-area"></div>
+
+  <!-- Core JavaScript Modules (Zero Frameworks) -->
+  <script src="js/api.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/print-util.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

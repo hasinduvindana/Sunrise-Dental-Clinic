@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Staff Portal Sign In | SunRise Dental Clinic</title>
+  
+  <!-- Pure CSS Stylesheets (Zero Frameworks) -->
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="icon" href="assets/images/logo-icon.png" type="image/png" />
+
+  <style>
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at top right, #134074 0%, #0b2545 60%, #07192f 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 460px;
+      background: #ffffff;
+      border-radius: var(--radius-xl);
+      padding: 2.5rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+      position: relative;
+    }
+
+    .login-logo-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .login-logo {
+      height: 64px;
+      width: auto;
+      margin-bottom: 0.75rem;
+    }
+
+    .login-title {
+      font-size: 1.5rem;
+      color: var(--primary-navy);
+      font-weight: 800;
+    }
+
+    .login-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .quick-role-badge-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .quick-role-btn {
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      cursor: pointer;
+      text-align: center;
+      transition: all var(--transition-fast);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    .quick-role-btn:hover {
+      border-color: var(--accent-teal);
+      background: var(--accent-ice);
+      color: var(--accent-teal);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <div class="login-logo-header">
+      <img src="assets/images/logo.png" alt="SunRise Dental Clinic Logo" class="login-logo" />
+      <h2 class="login-title">Staff Management Portal</h2>
+      <div class="login-subtitle">Sign in to access your clinic role workspace</div>
+    </div>
+
+    <!-- Quick Demo Role Switcher Badges (1-Click Test Login) -->
+    <div style="margin-bottom: 1rem;">
+      <label class="form-label" style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">
+        ⚡ Quick 1-Click Role Login for Demonstration:
+      </label>
+      <div class="quick-role-badge-grid">
+        <button class="quick-role-btn" onclick="quickFill('superadmin', 'Super@123')">
+          <span>👑</span>
+          <span>Super Admin</span>
+        </button>
+        <button class="quick-role-btn" onclick="quickFill('admin', 'Sunrise@123')">
+          <span>🛡️</span>
+          <span>Admin</span>
+        </button>
+        <button class="quick-role-btn" onclick="quickFill('drkasun', 'Sunrise@123')">
+          <span>🦷</span>
+          <span>Doctor</span>
+        </button>
+        <button class="quick-role-btn" onclick="quickFill('nurse1', 'Sunrise@123')">
+          <span>🩺</span>
+          <span>Nurse</span>
+        </button>
+        <button class="quick-role-btn" onclick="quickFill('patadmin', 'Sunrise@123')">
+          <span>👤</span>
+          <span>Patient Admin</span>
+        </button>
+        <button class="quick-role-btn" onclick="quickFill('cashier', 'Sunrise@123')">
+          <span>💳</span>
+          <span>Cashier</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Standard Login Form -->
+    <form id="form-login" onsubmit="handleLoginSubmit(event)">
+      <div class="form-group">
+        <label class="form-label" for="login-username">Staff Username <span class="required">*</span>:</label>
+        <input type="text" id="login-username" class="form-control" placeholder="Enter username..." value="superadmin" required />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="login-password">Password <span class="required">*</span>:</label>
+        <input type="password" id="login-password" class="form-control" placeholder="Enter password..." required />
+      </div>
+
+      <div class="form-group" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+          <input type="checkbox" checked /> Remember session
+        </label>
+        <a href="index.html" style="color: var(--accent-teal);">← Back to Public Website</a>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg w-100 mt-2">
+        Sign In to Portal ➔
+      </button>
+    </form>
+
+    <div style="margin-top: 1.75rem; text-align: center; font-size: 0.8rem; color: #94a3b8; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+      SunRise Dental Clinic POS & Health Information System &copy; 2026
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- JavaScript Modules -->
+  <script src="js/api.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+  
+  <script>
+    function quickFill(user, pass) {
+      document.getElementById('login-username').value = user;
+      document.getElementById('login-password').value = pass;
+      // Trigger instant sign in
+      document.getElementById('form-login').dispatchEvent(new Event('submit'));
+    }
+
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+      const button = e.target.querySelector('button[type="submit"]');
+
+      if (button) { button.disabled = true; button.textContent = 'Signing in...'; }
+
+      // The password is checked on the server against a salted hash.
+      const result = await AuthService.login(username, password);
+
+      if (button) { button.disabled = false; button.textContent = 'Sign In Securely'; }
+
+      if (result.success) {
+        showToast(`Welcome back, ${result.user.fullName}!`, 'success');
+        setTimeout(() => { window.location.href = 'dashboard.html'; }, 400);
+      } else {
+        showToast(result.message, 'error');
+        document.getElementById('login-password').value = '';
+      }
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.innerHTML = `
+        <div style="font-size: 1.2rem;">${type === 'success' ? '✅' : '❌'}</div>
+        <div class="toast-content">
+          <div class="toast-title">${type === 'success' ? 'Success' : 'Error'}</div>
+          <div class="toast-msg">${message}</div>
+        </div>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3500);
+    }
+  </script>
+</body>
+</html>
