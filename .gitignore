@@ -1,0 +1,10 @@
+target/
+*.war
+*.class
+.idea/
+*.iml
+.settings/
+.classpath
+.project
+*.log
+app.properties.local
