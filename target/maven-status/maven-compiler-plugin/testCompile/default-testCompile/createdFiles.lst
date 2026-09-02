@@ -1,0 +1,7 @@
+pos\CardMaskingTest.class
+service\AuthServiceTest.class
+util\PasswordUtilTest.class
+pos\PosIdsTest.class
+service\PricingStrategyTest.class
+pos\PosStatusTest.class
+util\JsonTest.class
