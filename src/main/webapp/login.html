@@ -7,6 +7,7 @@
   
   <!-- Pure CSS Stylesheets (Zero Frameworks) -->
   <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/form-popup.css" />
   <link rel="icon" href="assets/images/logo-icon.png" type="image/png" />
 
   <style>
@@ -161,8 +162,9 @@
   <!-- JavaScript Modules -->
   <script src="js/api.js"></script>
   <script src="js/store.js"></script>
+  <script src="js/form-popup.js"></script>
   <script src="js/auth.js"></script>
-  
+
   <script>
     function quickFill(user, pass) {
       document.getElementById('login-username').value = user;
@@ -177,18 +179,46 @@
       const password = document.getElementById('login-password').value;
       const button = e.target.querySelector('button[type="submit"]');
 
+      const complete = FormPopup.requireFields([
+        { label: 'Staff Username', value: username },
+        { label: 'Password', value: password }
+      ], 'Sign in');
+      if (!complete) return;
+
       if (button) { button.disabled = true; button.textContent = 'Signing in...'; }
+
+      FormPopup.show({
+        status: 'pending',
+        title: 'Signing In...',
+        message: 'Checking your credentials with the clinic server. Please wait.'
+      });
 
       // The password is checked on the server against a salted hash.
       const result = await AuthService.login(username, password);
 
-      if (button) { button.disabled = false; button.textContent = 'Sign In Securely'; }
+      if (button) { button.disabled = false; button.textContent = 'Sign In to Portal ➔'; }
 
       if (result.success) {
-        showToast(`Welcome back, ${result.user.fullName}!`, 'success');
-        setTimeout(() => { window.location.href = 'dashboard.html'; }, 400);
+        FormPopup.completed(`Welcome back, ${result.user.fullName}. Opening your workspace...`, {
+          title: 'Sign In Completed',
+          details: [
+            ['Username', result.user.username],
+            ['Role', result.user.role]
+          ],
+          closeLabel: '',
+          actions: [{
+            label: 'Continue to Dashboard ➔',
+            style: 'primary',
+            keepOpen: true,
+            onClick: () => { window.location.href = 'dashboard.html'; }
+          }]
+        });
+        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1400);
       } else {
-        showToast(result.message, 'error');
+        FormPopup.notCompleted(result.message, {
+          title: 'Sign In Not Completed',
+          note: 'Check the username and password, then try again. Contact the system administrator if the account is locked or inactive.'
+        });
         document.getElementById('login-password').value = '';
       }
     }

@@ -444,17 +444,19 @@ function renderPosCashierView() {
 
 window.searchAppointmentForCashier = function() {
   const query = document.getElementById('pos-search-input').value.trim();
-  if (!query) {
-    showToast('Please enter an NIC or Appointment ID to search.', 'warning');
+  if (!FormPopup.requireFields([{ label: 'Patient NIC or Appointment ID', value: query }], 'The appointment search')) {
     return;
   }
+
   const appointments = ClinicStore.getAppointments();
   const found = appointments.find(a => a.patientNic.toLowerCase() === query.toLowerCase() || a.id.toLowerCase() === query.toLowerCase());
 
   if (found) {
     selectAppointmentForCheckout(found.id);
   } else {
-    showToast(`No appointment found matching query: ${query}`, 'error');
+    FormPopup.notCompleted(`No appointment is registered under "${query}".`, {
+      note: 'Check the NIC or Appointment ID and search again, or book the patient in from the Patient Administration screen first.'
+    });
   }
 };
 
@@ -567,7 +569,10 @@ window.setCashierPaymentMode = function(mode) {
 };
 
 window.processCashierCheckout = function() {
-  if (!cashierSelectedAppointment) return;
+  if (!cashierSelectedAppointment) {
+    FormPopup.notCompleted('No appointment is selected for checkout. Pick one from the queue or search by NIC first.');
+    return;
+  }
 
   let cardData = {};
   if (cashierPaymentMode === 'CARD') {
@@ -576,10 +581,11 @@ window.processCashierCheckout = function() {
     const cardType = document.getElementById('pos-card-type').value;
     const cardProvider = document.getElementById('pos-card-provider').value;
 
-    if (!cardNum || !bankName) {
-      showToast('Please enter the Card Number and Issuing Bank Name.', 'error');
-      return;
-    }
+    const complete = FormPopup.requireFields([
+      { label: 'Card Number', value: cardNum },
+      { label: 'Issuing Bank Name', value: bankName }
+    ], 'The card payment');
+    if (!complete) return;
 
     cardData = {
       cardType,
@@ -589,23 +595,50 @@ window.processCashierCheckout = function() {
     };
   }
 
+  // Held locally because the checkout panel is cleared below, while the popup
+  // is still waiting on the server.
+  const paidFor = cashierSelectedAppointment;
+  const paidBy = cashierPaymentMode;
+  const settings = ClinicStore.getSettings();
+
   // Process payment in ClinicStore
   const payment = ClinicStore.processPayment({
-    appointmentId: cashierSelectedAppointment.id,
-    patientNic: cashierSelectedAppointment.patientNic,
-    patientName: cashierSelectedAppointment.patientName,
-    doctorId: cashierSelectedAppointment.doctorId,
-    doctorName: cashierSelectedAppointment.doctorName,
+    appointmentId: paidFor.id,
+    patientNic: paidFor.patientNic,
+    patientName: paidFor.patientName,
+    doctorId: paidFor.doctorId,
+    doctorName: paidFor.doctorName,
     paymentType: cashierPaymentMode,
-    amountPaid: cashierSelectedAppointment.consultationFee,
+    amountPaid: paidFor.consultationFee,
     cashierName: currentUser.fullName,
     ...cardData
   });
 
-  showToast(`Payment successfully processed! Receipt: ${payment.receiptNo}`, 'success');
-
-  // Trigger Print Receipt
-  PrintUtil.printPaymentReceipt(payment);
+  // The receipt number comes from the database, so it is only quoted once the
+  // payment has actually been recorded.
+  FormPopup.forWrite({
+    title: 'Payment Completed',
+    pendingMessage: 'Recording the payment and issuing the receipt. Please wait.',
+    message: 'The consultation fee was collected and the receipt has been issued.',
+    highlight: () => ({
+      label: 'Official Receipt Number',
+      value: payment.receiptNo,
+      note: `Token # ${paidFor.tokenNumber} | ${paidFor.id}`
+    }),
+    details: () => [
+      ['Patient', `${paidFor.patientName} (${paidFor.patientNic})`],
+      ['Attending Doctor', paidFor.doctorName],
+      ['Payment Mode', paidBy === 'CARD' ? `${cardData.cardType} CARD (${cardData.cardProvider})` : 'CASH'],
+      ['Amount Paid', `${settings.currencySymbol} ${Number(paidFor.consultationFee).toLocaleString()}`],
+      ['Collected By', currentUser.fullName]
+    ],
+    failTitle: 'Payment Not Completed',
+    actions: [{
+      label: '🖨️ Print Official Receipt',
+      style: 'secondary',
+      onClick: () => PrintUtil.printPaymentReceipt(payment)
+    }]
+  });
 
   // Refresh Cashier view
   cashierSelectedAppointment = null;
@@ -642,11 +675,19 @@ function renderCancelAppointmentView() {
 window.searchCancelAppointments = function() {
   const nic = document.getElementById('cancel-nic-input').value.trim();
   const resultsBox = document.getElementById('cancel-results-box');
-  if (!nic || !resultsBox) return;
+  if (!resultsBox) return;
+
+  if (!FormPopup.requireFields([{ label: 'Patient National Identity Card (NIC)', value: nic }], 'The appointment search')) {
+    return;
+  }
 
   const appointments = ClinicStore.getAppointments().filter(a => a.patientNic.toLowerCase() === nic.toLowerCase() && a.status !== 'CANCELLED' && a.status !== 'PAID');
 
   if (appointments.length === 0) {
+    FormPopup.notCompleted(`No active cancellable appointment is held under NIC ${nic}.`, {
+      note: 'Appointments that are already paid or already cancelled cannot be cancelled from this screen.'
+    });
+
     resultsBox.innerHTML = `
       <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 1.25rem; text-align: center; color: #991b1b;">
         No active cancellable appointments found for NIC: <strong>${nic}</strong>.
@@ -678,12 +719,24 @@ window.executeCancelAppointment = function(nic) {
   }
 
   const result = ClinicStore.cancelAppointmentByNic(nic);
-  if (result.success) {
-    showToast(`Successfully cancelled ${result.count} appointment(s) for NIC: ${nic}.`, 'success');
-    renderCancelAppointmentView();
-  } else {
-    showToast(result.message, 'error');
+  if (!result.success) {
+    FormPopup.notCompleted(result.message, { title: 'Cancellation Not Completed' });
+    return;
   }
+
+  FormPopup.forWrite({
+    title: 'Cancellation Completed',
+    pendingMessage: 'Releasing the reserved session slot. Please wait.',
+    message: `${result.count} appointment${result.count === 1 ? '' : 's'} cancelled and the doctor session slot released.`,
+    details: [
+      ['Patient NIC', nic],
+      ['Appointments Cancelled', String(result.count)],
+      ['Cancelled By', currentUser.fullName]
+    ],
+    failTitle: 'Cancellation Not Completed'
+  });
+
+  renderCancelAppointmentView();
 };
 
 /* --------------------------------------------------------------------------
@@ -837,6 +890,15 @@ window.handlePatientRegistration = function(e) {
   const allergies = document.getElementById('reg-pat-allergies').value.trim();
   const medicalHistory = document.getElementById('reg-pat-history').value.trim();
 
+  const complete = FormPopup.requireFields([
+    { label: 'NIC Number', value: nic },
+    { label: 'Full Name', value: fullName },
+    { label: 'Phone Contact', value: phone }
+  ], 'The patient registration');
+  if (!complete) return;
+
+  const alreadyOnFile = ClinicStore.getPatientByNic(nic) !== null;
+
   const patient = ClinicStore.addOrUpdatePatient({
     nic,
     fullName,
@@ -850,7 +912,26 @@ window.handlePatientRegistration = function(e) {
     medicalHistory
   });
 
-  showToast(`Patient profile for ${patient.fullName} successfully saved!`, 'success');
+  FormPopup.forWrite({
+    title: 'Registration Completed',
+    pendingMessage: 'Saving the patient profile to the clinic database. Please wait.',
+    message: alreadyOnFile
+      ? `The existing profile for ${patient.fullName} was updated.`
+      : `${patient.fullName} is now registered as a clinic patient.`,
+    details: [
+      ['NIC Number', nic],
+      ['Full Name', fullName],
+      ['Phone Contact', phone],
+      ['Email', email],
+      ['Date of Birth', dob],
+      ['Gender', gender],
+      ['Blood Group', bloodGroup],
+      ['Allergies', allergies]
+    ],
+    note: 'The NIC has been carried across to the session assignment form so you can book this patient straight away.',
+    failTitle: 'Registration Not Completed'
+  });
+
   document.getElementById('assign-pat-nic').value = nic;
 };
 
@@ -878,15 +959,26 @@ window.handleSessionAssignment = function(e) {
   const nic = document.getElementById('assign-pat-nic').value.trim();
   const sessionId = document.getElementById('assign-session-id').value;
 
+  const complete = FormPopup.requireFields([
+    { label: 'Patient NIC Number', value: nic },
+    { label: 'Doctor Session', value: sessionId }
+  ], 'The session assignment');
+  if (!complete) return;
+
   const patient = ClinicStore.getPatientByNic(nic);
   if (!patient) {
-    showToast(`Patient with NIC "${nic}" is not registered. Please complete the registration form first.`, 'error');
+    FormPopup.notCompleted(`No patient is registered under NIC "${nic}".`, {
+      title: 'Booking Not Completed',
+      note: 'Complete the "Register New Patient" form on the left first, then assign the session.'
+    });
     return;
   }
 
   const session = ClinicStore.getSessions().find(s => s.id === sessionId);
   if (!session) {
-    showToast('Please select a valid doctor session.', 'error');
+    FormPopup.notCompleted('The doctor session you selected is no longer available. Please choose another session.', {
+      title: 'Booking Not Completed'
+    });
     return;
   }
 
@@ -900,10 +992,35 @@ window.handleSessionAssignment = function(e) {
     consultationFee: session.consultationFee
   });
 
-  showToast(`Appointment # ${newApt.tokenNumber} successfully booked!`, 'success');
+  const settings = ClinicStore.getSettings();
 
-  // Print official Appointment Slip
-  PrintUtil.printAppointmentSlip(newApt);
+  FormPopup.forWrite({
+    title: 'Booking Completed',
+    pendingMessage: 'Reserving the session slot and allocating a token. Please wait.',
+    message: `${patient.fullName} is booked into ${session.doctorName}'s session.`,
+    highlight: () => ({
+      label: 'Appointment Token',
+      value: '# ' + newApt.tokenNumber,
+      note: 'Reference ID: ' + newApt.id
+    }),
+    details: () => [
+      ['Patient', `${patient.fullName} (${patient.nic})`],
+      ['Attending Doctor', session.doctorName],
+      ['Session Date', session.date],
+      ['Time Slot', `${session.startTime} - ${session.endTime}`],
+      ['Clinic Room', session.roomNo],
+      ['Consultation Fee', `${settings.currencySymbol} ${Number(session.consultationFee).toLocaleString()}`]
+    ],
+    note: 'The fee is collected at the cashier counter. Hand the printed slip to the patient.',
+    failTitle: 'Booking Not Completed',
+    actions: [{
+      label: '🖨️ Print Appointment Slip',
+      style: 'secondary',
+      onClick: () => PrintUtil.printAppointmentSlip(
+        ClinicStore.getAppointments().find(a => a.id === newApt.id) || newApt
+      )
+    }]
+  });
 
   renderPatientAdminView();
 };
@@ -1056,6 +1173,15 @@ window.submitPatientVitals = function(e, aptId) {
   const pulse = document.getElementById('vitals-pulse').value.trim();
   const complaint = document.getElementById('vitals-complaint').value.trim();
 
+  const complete = FormPopup.requireFields([
+    { label: 'Blood Pressure', value: bp },
+    { label: 'Pulse Rate', value: pulse },
+    { label: 'Chief Dental Complaint', value: complaint }
+  ], 'The triage record');
+  if (!complete) return;
+
+  const apt = ClinicStore.getAppointments().find(a => a.id === aptId);
+
   ClinicStore.updateAppointmentStatus(aptId, 'CONFIRMED_BY_NURSE', {
     vitals: {
       bp,
@@ -1067,7 +1193,23 @@ window.submitPatientVitals = function(e, aptId) {
   const modal = document.getElementById('modal-record-vitals');
   if (modal) modal.remove();
 
-  showToast('Patient confirmed and queue dispatched to doctor!', 'success');
+  FormPopup.forWrite({
+    title: 'Triage Completed',
+    pendingMessage: 'Recording the vitals and dispatching the patient. Please wait.',
+    message: apt
+      ? `${apt.patientName} has been checked in and sent to ${apt.doctorName}'s consultation queue.`
+      : 'The patient has been checked in and sent to the doctor consultation queue.',
+    details: [
+      ['Patient', apt ? `${apt.patientName} (${apt.patientNic})` : ''],
+      ['Token', apt ? '# ' + apt.tokenNumber : ''],
+      ['Blood Pressure', bp],
+      ['Pulse Rate', pulse],
+      ['Chief Complaint', complaint],
+      ['Recorded By', currentUser.fullName]
+    ],
+    failTitle: 'Triage Not Completed'
+  });
+
   renderNurseTriageView();
 };
 
@@ -1237,8 +1379,15 @@ function recalculateBillTotals() {
 
 window.generateAndSaveTreatmentInvoice = function() {
   const aptId = document.getElementById('bill-appointment-select').value;
-  if (!aptId || billingSelectedItems.length === 0) {
-    showToast('Please select an appointment and add at least one treatment.', 'error');
+
+  const missing = [];
+  if (!aptId) missing.push('Patient Appointment');
+  if (billingSelectedItems.length === 0) missing.push('At least one treatment line');
+  if (missing.length > 0) {
+    FormPopup.notCompleted('The treatment invoice was not generated. Complete the items below and try again.', {
+      title: 'Not Completed',
+      missing: missing
+    });
     return;
   }
 
@@ -1264,10 +1413,35 @@ window.generateAndSaveTreatmentInvoice = function() {
     status: 'PENDING'
   });
 
-  showToast(`Treatment Invoice ${newInvoice.invoiceNo} successfully generated!`, 'success');
+  const settings = ClinicStore.getSettings();
+  const lineCount = billingSelectedItems.length;
 
-  // Print Invoice Preview
-  PrintUtil.printTreatmentInvoice(newInvoice);
+  // The invoice number is issued by the database, so it is read after the save.
+  FormPopup.forWrite({
+    title: 'Invoice Completed',
+    pendingMessage: 'Generating the treatment invoice. Please wait.',
+    message: 'The treatment invoice was generated and saved against this appointment.',
+    highlight: () => ({
+      label: 'Invoice Number',
+      value: newInvoice.invoiceNo,
+      note: `${lineCount} treatment line${lineCount === 1 ? '' : 's'} billed`
+    }),
+    details: [
+      ['Patient', `${apt.patientName} (${apt.patientNic})`],
+      ['Attending Doctor', apt.doctorName],
+      ['Subtotal', `${settings.currencySymbol} ${subtotal.toLocaleString()}`],
+      ['Discount', `${settings.currencySymbol} ${discount.toLocaleString()}`],
+      ['Net Payable', `${settings.currencySymbol} ${totalAmount.toLocaleString()}`],
+      ['Status', 'PENDING PAYMENT']
+    ],
+    note: 'The invoice is unpaid until the cashier settles it at the payment desk.',
+    failTitle: 'Invoice Not Completed',
+    actions: [{
+      label: '🖨️ Print Invoice',
+      style: 'secondary',
+      onClick: () => PrintUtil.printTreatmentInvoice(newInvoice)
+    }]
+  });
 
   renderNurseBillingView();
 };
@@ -1426,6 +1600,13 @@ window.handleDoctorReportSubmit = function(e, aptId, nic, patientName) {
   const date = document.getElementById('doc-report-date').value;
   const findings = document.getElementById('doc-report-findings').value.trim();
 
+  const complete = FormPopup.requireFields([
+    { label: 'Report Type', value: reportType },
+    { label: 'Report Date', value: date },
+    { label: 'Clinical Observations & Findings', value: findings }
+  ], 'The clinical report');
+  if (!complete) return;
+
   const newReport = ClinicStore.addReport({
     patientNic: nic,
     patientName,
@@ -1442,10 +1623,32 @@ window.handleDoctorReportSubmit = function(e, aptId, nic, patientName) {
   const modal = document.getElementById('modal-doc-consult');
   if (modal) modal.remove();
 
-  showToast(`Clinical report ${newReport.reportNo} saved successfully! (File: storage/reports/${newReport.fileName})`, 'success');
-
-  // Trigger printable report preview
-  PrintUtil.printClinicalReport(newReport);
+  // Two writes go out here - the report and the appointment status - and
+  // forWrite waits for both before it says Completed.
+  FormPopup.forWrite({
+    title: 'Consultation Completed',
+    pendingMessage: 'Saving the clinical report and closing the consultation. Please wait.',
+    message: `The clinical report for ${patientName} was saved and the consultation is marked complete.`,
+    highlight: () => ({
+      label: 'Report Reference',
+      value: newReport.reportNo,
+      note: 'storage/reports/' + newReport.fileName
+    }),
+    details: [
+      ['Patient', `${patientName} (${nic})`],
+      ['Report Type', reportType],
+      ['Report Date', date],
+      ['Clinician', currentUser.fullName],
+      ['Appointment Status', 'TREATMENT COMPLETED']
+    ],
+    note: 'The patient can now retrieve this report from the public website by entering their NIC.',
+    failTitle: 'Consultation Not Completed',
+    actions: [{
+      label: '🖨️ Print Clinical Report',
+      style: 'secondary',
+      onClick: () => PrintUtil.printClinicalReport(newReport)
+    }]
+  });
 
   renderDoctorPortalView();
 };
@@ -1516,10 +1719,36 @@ function renderDoctorPricingView() {
 window.saveDoctorCustomFee = function(doctorId, treatmentId) {
   const input = document.getElementById(`charge-input-${treatmentId}`);
   if (!input) return;
-  const newFee = Number(input.value) || 0;
+
+  if (!FormPopup.requireFields([{ label: 'Custom Treatment Fee', value: input.value }], 'The fee update')) {
+    return;
+  }
+
+  const newFee = Number(input.value);
+  if (isNaN(newFee) || newFee < 0) {
+    FormPopup.notCompleted('The custom treatment fee must be a positive amount.', {
+      title: 'Fee Update Not Completed'
+    });
+    return;
+  }
+
+  const treatment = ClinicStore.getTreatments().find(t => t.id === treatmentId);
+  const doctor = ClinicStore.getUserById(doctorId);
+  const settings = ClinicStore.getSettings();
 
   ClinicStore.setDoctorTreatmentFee(doctorId, treatmentId, newFee);
-  showToast(`Custom treatment fee updated to Rs. ${newFee.toLocaleString()}!`, 'success');
+
+  FormPopup.forWrite({
+    title: 'Fee Update Completed',
+    pendingMessage: 'Saving the custom treatment charge. Please wait.',
+    message: 'The custom treatment charge for this doctor was updated.',
+    details: [
+      ['Doctor', doctor ? doctor.fullName : doctorId],
+      ['Treatment', treatment ? treatment.name : treatmentId],
+      ['New Fee', `${settings.currencySymbol} ${newFee.toLocaleString()}`]
+    ],
+    failTitle: 'Fee Update Not Completed'
+  });
 };
 
 /* --------------------------------------------------------------------------
@@ -1650,6 +1879,23 @@ window.handleCreateSession = function(e) {
   const endTime = document.getElementById('modal-session-end').value;
   const maxPatients = Number(document.getElementById('modal-session-capacity').value) || 10;
 
+  const complete = FormPopup.requireFields([
+    { label: 'Attending Doctor', value: doctorId },
+    { label: 'Session Date', value: date },
+    { label: 'Room Number', value: roomNo },
+    { label: 'Start Time', value: startTime },
+    { label: 'End Time', value: endTime }
+  ], 'The new session');
+  if (!complete) return;
+
+  if (startTime >= endTime) {
+    FormPopup.notCompleted('The end time must be later than the start time.', {
+      title: 'Session Not Created',
+      details: [['Start Time', startTime], ['End Time', endTime]]
+    });
+    return;
+  }
+
   const newSession = ClinicStore.addSession({
     doctorId,
     date,
@@ -1662,7 +1908,22 @@ window.handleCreateSession = function(e) {
   const modal = document.getElementById('modal-add-session');
   if (modal) modal.remove();
 
-  showToast(`Doctor session ${newSession.id} created successfully!`, 'success');
+  FormPopup.forWrite({
+    title: 'Session Created',
+    pendingMessage: 'Creating the doctor session. Please wait.',
+    message: `A consultation session for ${newSession.doctorName} is now open for booking.`,
+    details: () => [
+      ['Session ID', newSession.id],
+      ['Attending Doctor', newSession.doctorName],
+      ['Session Date', date],
+      ['Time Range', `${startTime} - ${endTime}`],
+      ['Clinic Room', roomNo],
+      ['Max Patient Capacity', String(maxPatients)]
+    ],
+    note: 'The session is now visible on the public website and patients can book slots against it.',
+    failTitle: 'Session Not Created'
+  });
+
   if (currentActiveTab === 'doctor-sessions') renderDoctorSessionsView();
   else if (currentActiveTab === 'overview') renderOverviewView();
 };
@@ -1726,7 +1987,35 @@ window.handleUpdateSession = function(e, sessionId) {
   const roomNo = document.getElementById('edit-session-room').value;
   const startTime = document.getElementById('edit-session-start').value;
   const endTime = document.getElementById('edit-session-end').value;
-  const maxPatients = Number(document.getElementById('edit-session-capacity').value);
+  const capacityInput = document.getElementById('edit-session-capacity').value;
+  const maxPatients = Number(capacityInput);
+
+  const complete = FormPopup.requireFields([
+    { label: 'Session Date', value: date },
+    { label: 'Room Number', value: roomNo },
+    { label: 'Start Time', value: startTime },
+    { label: 'End Time', value: endTime },
+    { label: 'Max Patient Capacity', value: capacityInput }
+  ], 'The session update');
+  if (!complete) return;
+
+  if (startTime >= endTime) {
+    FormPopup.notCompleted('The end time must be later than the start time.', {
+      title: 'Session Not Updated',
+      details: [['Start Time', startTime], ['End Time', endTime]]
+    });
+    return;
+  }
+
+  const session = ClinicStore.getSessions().find(s => s.id === sessionId);
+  const booked = session ? (session.bookedCount || 0) : 0;
+  if (maxPatients < booked) {
+    FormPopup.notCompleted(`Capacity cannot drop below the ${booked} slot(s) already booked in this session.`, {
+      title: 'Session Not Updated',
+      details: [['Already Booked', String(booked)], ['Requested Capacity', String(maxPatients)]]
+    });
+    return;
+  }
 
   ClinicStore.updateSession(sessionId, {
     date,
@@ -1739,7 +2028,21 @@ window.handleUpdateSession = function(e, sessionId) {
   const modal = document.getElementById('modal-edit-session');
   if (modal) modal.remove();
 
-  showToast('Session updated successfully!', 'success');
+  FormPopup.forWrite({
+    title: 'Session Updated',
+    pendingMessage: 'Saving the session changes. Please wait.',
+    message: 'The doctor session was updated and the public schedule now shows the new details.',
+    details: [
+      ['Session ID', sessionId],
+      ['Session Date', date],
+      ['Time Range', `${startTime} - ${endTime}`],
+      ['Clinic Room', roomNo],
+      ['Max Patient Capacity', String(maxPatients)],
+      ['Currently Booked', String(booked)]
+    ],
+    failTitle: 'Session Not Updated'
+  });
+
   renderDoctorSessionsView();
 };
 
@@ -2038,6 +2341,16 @@ window.handleUploadReportSubmit = function(e) {
   const reportType = document.getElementById('up-report-type').value;
   const findings = document.getElementById('up-report-findings').value.trim();
 
+  const complete = FormPopup.requireFields([
+    { label: 'Patient NIC', value: patientNic },
+    { label: 'Patient Name', value: patientName },
+    { label: 'Attending Doctor', value: doctorId },
+    { label: 'Report Date', value: date },
+    { label: 'Report Type', value: reportType },
+    { label: 'Clinical Observations & Diagnostic Findings', value: findings }
+  ], 'The report upload');
+  if (!complete) return;
+
   const newReport = ClinicStore.addReport({
     patientNic,
     patientName,
@@ -2051,7 +2364,26 @@ window.handleUploadReportSubmit = function(e) {
   const modal = document.getElementById('modal-upload-report');
   if (modal) modal.remove();
 
-  showToast(`Report ${newReport.reportNo} successfully archived! Saved as: storage/reports/${newReport.fileName}`, 'success');
+  FormPopup.forWrite({
+    title: 'Upload Completed',
+    pendingMessage: 'Archiving the report against the patient record. Please wait.',
+    message: 'The report was archived and verified against the patient record.',
+    highlight: () => ({
+      label: 'Report Reference',
+      value: newReport.reportNo,
+      note: 'storage/reports/' + newReport.fileName
+    }),
+    details: [
+      ['Patient', `${patientName} (${patientNic})`],
+      ['Report Type', reportType],
+      ['Report Date', date],
+      ['Attending Doctor', doctor ? doctor.fullName : 'Doctor'],
+      ['Status', 'VERIFIED']
+    ],
+    note: 'The patient can now download this report from the public website using their NIC.',
+    failTitle: 'Upload Not Completed'
+  });
+
   renderPatientReportsMgmtView();
 };
 
@@ -2143,6 +2475,15 @@ window.handleSaveClinicSettings = function(e) {
   const receiptPrefix = document.getElementById('set-rec-prefix').value.trim();
   const footerNote = document.getElementById('set-footer-note').value.trim();
 
+  const complete = FormPopup.requireFields([
+    { label: 'Clinic Name', value: clinicName },
+    { label: 'Contact Phone', value: phone },
+    { label: 'Currency Symbol', value: currencySymbol },
+    { label: 'Invoice Numbering Prefix', value: invoicePrefix },
+    { label: 'Receipt Numbering Prefix', value: receiptPrefix }
+  ], 'The clinic settings');
+  if (!complete) return;
+
   ClinicStore.updateSettings({
     clinicName,
     tagline,
@@ -2156,7 +2497,23 @@ window.handleSaveClinicSettings = function(e) {
     footerNote
   });
 
-  showToast('Clinic global settings updated successfully!', 'success');
+  FormPopup.forWrite({
+    title: 'Settings Completed',
+    pendingMessage: 'Saving the clinic master settings. Please wait.',
+    message: 'The clinic master settings were updated across the whole system.',
+    details: [
+      ['Clinic Name', clinicName],
+      ['Contact Phone', phone],
+      ['Email', email],
+      ['Registration No', regNo],
+      ['Currency Symbol', currencySymbol],
+      ['Invoice Prefix', invoicePrefix],
+      ['Receipt Prefix', receiptPrefix]
+    ],
+    note: 'These details now appear on every printed invoice, receipt, appointment slip and clinical report.',
+    failTitle: 'Settings Not Saved'
+  });
+
   renderTopbar();
 };
 
@@ -2284,7 +2641,23 @@ window.handleCreateUser = function(e) {
   const phone = document.getElementById('usr-phone').value.trim();
   const email = document.getElementById('usr-email').value.trim();
 
-  const newUser = ClinicStore.addUser({
+  const complete = FormPopup.requireFields([
+    { label: 'Full Name', value: fullName },
+    { label: 'Login Username', value: username },
+    { label: 'Password', value: password },
+    { label: 'System Role', value: role }
+  ], 'The staff account');
+  if (!complete) return;
+
+  if (ClinicStore.getUsers().some(u => String(u.username).toLowerCase() === username.toLowerCase())) {
+    FormPopup.notCompleted(`The username "${username}" is already taken by another staff member.`, {
+      title: 'Account Not Created',
+      note: 'Choose a different login username and submit the form again.'
+    });
+    return;
+  }
+
+  ClinicStore.addUser({
     fullName,
     username,
     password,
@@ -2297,7 +2670,22 @@ window.handleCreateUser = function(e) {
   const modal = document.getElementById('modal-add-user');
   if (modal) modal.remove();
 
-  showToast(`Staff member ${newUser.fullName} successfully created!`, 'success');
+  FormPopup.forWrite({
+    title: 'Account Created',
+    pendingMessage: 'Creating the staff account. Please wait.',
+    message: `${fullName} can now sign in to the staff portal.`,
+    details: [
+      ['Full Name', fullName],
+      ['Login Username', username],
+      ['System Role', formatRole(role)],
+      ['Contact Phone', phone],
+      ['Email', email],
+      ['Status', 'ACTIVE']
+    ],
+    note: 'The password is stored as a salted hash and cannot be read back. Hand it to the staff member directly.',
+    failTitle: 'Account Not Created'
+  });
+
   renderUserManagementView();
 };
 

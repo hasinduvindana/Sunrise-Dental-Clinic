@@ -191,8 +191,7 @@ function initPatientReportFinder() {
 
   function performSearch() {
     const nic = nicInput.value.trim();
-    if (!nic) {
-      showToast('Please enter your National Identity Card (NIC) number.', 'warning');
+    if (!FormPopup.requireFields([{ label: 'National Identity Card (NIC) Number', value: nic }], 'The report search')) {
       return;
     }
 
@@ -200,6 +199,15 @@ function initPatientReportFinder() {
     const patient = ClinicStore.getPatientByNic(nic);
 
     if (reports.length === 0) {
+      FormPopup.notCompleted(
+        `No medical or diagnostic reports are filed under NIC ${nic}.`,
+        {
+          title: 'Not Completed',
+          note: 'If you visited the clinic recently your reports may still be under clinical verification. ' +
+                'Please call our reception desk on +94 11 234 5678.'
+        }
+      );
+
       resultsArea.innerHTML = `
         <div style="text-align: center; padding: 2.5rem; background: #ffffff; border-radius: 12px; border: 1.5px dashed #fca5a5;">
           <div style="font-size: 2.2rem; color: #ef4444; margin-bottom: 0.5rem;">📋</div>
@@ -254,6 +262,15 @@ function initPatientReportFinder() {
         `).join('')}
       </div>
     `;
+
+    FormPopup.completed('Your medical records were located and are listed below.', {
+      title: 'Search Completed',
+      details: [
+        ['Patient', patient ? patient.fullName : reports[0].patientName],
+        ['NIC', nic],
+        ['Reports Available', String(reports.length)]
+      ]
+    });
   }
 
   searchBtn.addEventListener('click', performSearch);
@@ -310,14 +327,17 @@ function initPublicAppointmentModal() {
     const email = document.getElementById('book-email').value.trim();
     const reason = document.getElementById('book-reason').value.trim();
 
-    if (!sessionId || !nic || !fullName || !phone) {
-      showToast('Please fill all mandatory fields.', 'error');
-      return;
-    }
+    const complete = FormPopup.requireFields([
+      { label: 'Doctor Session', value: sessionId },
+      { label: 'NIC Number', value: nic },
+      { label: 'Full Name', value: fullName },
+      { label: 'Phone Contact', value: phone }
+    ], 'Your appointment booking');
+    if (!complete) return;
 
     const session = ClinicStore.getSessions().find(s => s.id === sessionId);
     if (!session) {
-      showToast('Selected session is not valid.', 'error');
+      FormPopup.notCompleted('The doctor session you selected is no longer available. Please pick another session and book again.');
       return;
     }
 
@@ -343,52 +363,35 @@ function initPublicAppointmentModal() {
     window.closePublicBookingModal();
     initDoctorSchedules(); // refresh UI slots
 
-    // Show Confirmation Modal
-    showBookingConfirmationModal(newApt);
+    // The token number is allocated by the database, so the popup only quotes
+    // it once the booking has come back confirmed.
+    FormPopup.forWrite({
+      title: 'Booking Completed',
+      pendingMessage: 'Reserving your slot with the clinic. Please wait.',
+      message: 'Your appointment has been booked and your slot is reserved.',
+      highlight: () => ({
+        label: 'Your Appointment Token',
+        value: '# ' + newApt.tokenNumber,
+        note: 'Reference ID: ' + newApt.id
+      }),
+      details: () => [
+        ['Patient Name', `${newApt.patientName} (${newApt.patientNic})`],
+        ['Attending Doctor', newApt.doctorName],
+        ['Date of Consultation', newApt.date],
+        ['Consultation Fee', `Rs. ${Number(newApt.consultationFee).toLocaleString()}`]
+      ],
+      note: 'Payment Notice: online payment is not collected. Please present this token and settle the ' +
+            'consultation fee at our cashier reception counter when you arrive.',
+      failTitle: 'Booking Not Completed',
+      actions: [{
+        label: '🖨️ Print Appointment Slip',
+        style: 'secondary',
+        onClick: () => PrintUtil.printAppointmentSlip(
+          ClinicStore.getAppointments().find(a => a.id === newApt.id) || newApt
+        )
+      }]
+    });
   });
-}
-
-function showBookingConfirmationModal(apt) {
-  const modalHtml = `
-    <div class="modal-backdrop active" id="modal-confirm-booking">
-      <div class="modal">
-        <div class="modal-header" style="background: #f0fdf4;">
-          <div class="modal-title" style="color: #166534;">
-            <span>✅</span> Appointment Successfully Booked!
-          </div>
-          <button class="modal-close" onclick="document.getElementById('modal-confirm-booking').remove()">&times;</button>
-        </div>
-        <div class="modal-body text-center">
-          <div style="background: #e0f2fe; border: 2px solid #0077b6; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
-            <div style="font-size: 0.85rem; font-weight: 700; color: #0077b6; text-transform: uppercase;">YOUR APPOINTMENT TOKEN</div>
-            <div style="font-size: 3rem; font-weight: 800; color: #0b2545; margin: 0.25rem 0;"># ${apt.tokenNumber}</div>
-            <div style="font-size: 0.85rem; color: #64748b;">Reference ID: <strong>${apt.id}</strong></div>
-          </div>
-
-          <div style="text-align: left; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; font-size: 0.9rem;">
-            <div style="margin-bottom: 0.4rem;"><strong>Patient Name:</strong> ${apt.patientName} (${apt.patientNic})</div>
-            <div style="margin-bottom: 0.4rem;"><strong>Attending Doctor:</strong> ${apt.doctorName}</div>
-            <div style="margin-bottom: 0.4rem;"><strong>Date of Consultation:</strong> ${apt.date}</div>
-            <div style="margin-bottom: 0.4rem;"><strong>Consultation Fee:</strong> Rs. ${Number(apt.consultationFee).toLocaleString()}</div>
-            <div style="margin-top: 0.75rem; padding: 0.5rem; background: #fef3c7; border-radius: 6px; color: #92400e; font-size: 0.825rem; font-weight: 600;">
-              ⚠️ <strong>Payment Notice:</strong> Online payment is not collected. Please present this token and pay at our cashier reception counter upon arrival.
-            </div>
-          </div>
-
-          <div style="display: flex; gap: 0.75rem; justify-content: center;">
-            <button class="btn btn-secondary" onclick="document.getElementById('modal-confirm-booking').remove()">
-              Close
-            </button>
-            <button class="btn btn-primary" onclick="PrintUtil.printAppointmentSlip(ClinicStore.getAppointments().find(a => a.id === '${apt.id}'))">
-              🖨️ Print Appointment Slip
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 
 /* --------------------------------------------------------------------------
